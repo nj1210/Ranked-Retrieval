@@ -25,8 +25,9 @@ def polish_word_and_update_index(word,tempIndex):
 	for c in word:
 		if c.isalpha():
 			pol_word.append(c)
-	pol_word = ''.join(pol_word)
-	update_doc_index(pol_word,tempIndex)
+	if len(pol_word)>1:
+		pol_word = ''.join(pol_word)
+		update_doc_index(pol_word,tempIndex)
 		
 #Reads a document and updates the index.
 def readDoc(doc_id,doc_contents,primIndex):
