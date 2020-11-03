@@ -46,6 +46,7 @@ def readDoc(doc_id,doc_contents,primIndex):
 
 #Reads a file and updates the index    
 def parseFile(filename,primIndex):
+	global id_title
 	with codecs.open(filename, encoding='utf-8') as f:
 		data = f.read()
 	soup = BeautifulSoup(data,'html.parser')
@@ -55,12 +56,14 @@ def parseFile(filename,primIndex):
     		doc_id = int(t["id"])
     		print("Reading document id: "+str(doc_id))
     		doc_title = t["title"]
+    		id_title[doc_id] = doc_title
     		doc_contents = t.get_text()
     		readDoc(doc_id,doc_contents,primIndex)
     		no_docs+=1
 	
 no_docs = 0
-primIndex = {}				#The data structure for the index.  		
+primIndex = {}				#The data structure for the index.  	
+id_title = {}				#Map from doc ids to titles.	
 parseFile("wiki_00",primIndex)	#Parsing the first file
 parseFile("wiki_01",primIndex)	#Parsing the second file
 parseFile("wiki_02",primIndex)	#Parsing the third file
@@ -68,7 +71,11 @@ parseFile("wiki_02",primIndex)	#Parsing the third file
 #Dumping the dictionary into binary file 'index' in pickle format (Not readable)
 index_file = open('index', 'wb')
 pickle.dump(primIndex, index_file) 
-index_file.close() 
+index_file.close()
+
+id_file = open('map','wb')
+pickle.dump(id_title, id_file) 
+id_file.close()
 
 print("\nNumber of documents read = "+str(no_docs))
 print("Index created and saved in 'index' file.")
