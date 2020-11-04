@@ -15,27 +15,37 @@ def ranking(primIndex,queryIndex):
     
     
     scores={}
-    q_normalize = 0
-    d_normalize={}
+    normalize={}
     for query_word in queryIndex:
         df= (primIndex[query_word])[1]
         idf = math.log(no_doc/df,10)
         w_tq = idf * (1+math.log(queryIndex[query_word],10))
-        q_normalize += w_tq*w_tq
-        
+    
         word_list =(primIndex[query_word])[0]
         for i in range(len(word_list)):
             w_td = 1+ math.log (word_list[i][1],10)
             score_d = w_td * w_tq
-            scores[word_list[i][0]] = scores.get(word_list[i][0],0)+score_d
-            d_normalize[word_list[i][0]] = d_normalize.get(word_list[i][0],0) + score_d*score_d             
+            if word_list[i][0] in scores:
+                scores[word_list[i][0]]= scores[word_list[i][0]] + score_d
+            else:
+                scores[word_list[i][0]]= score_d
+
+
+    for doc_id in scores:
+        normalize[doc_id]=0
+
+    for word in primIndex:
+        posting_list = primIndex[word][0]
+    
+        for i in range(len(posting_list)):
+            if posting_list[i][0] in normalize:
+                normalize[posting_list[i][0]]= normalize[posting_list[i][0]] + (1 + math.log(posting_list[i][1],10) )**2             
     
         
 #from collections import OrderedDict
     
     for doc_id in scores:
-        scores[doc_id] = scores[doc_id]/(math.sqrt(d_normalize[doc_id]))
-        scores[doc_id] = scores[doc_id]/(math.sqrt(q_normalize))
+        scores[doc_id] = scores[doc_id]/(math.sqrt(normalize[doc_id]))
     
 
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
