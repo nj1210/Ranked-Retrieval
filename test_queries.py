@@ -6,18 +6,22 @@ import operator
 
 def print_topK_docs(sorted_scores):
     print()
+    if len(sorted_scores)==0:
+        print("No documents matching query found.")
     for i in range(min(50,len(sorted_scores))):
         print(f"id: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
 def ranking(primIndex,queryIndex):
-    
+
     no_doc=1614  #Total no of Docs
-    
-    
+
+
     scores={}
     normalize={}
     q_norm = 0
     for query_word in queryIndex:
+        if primIndex.get(query_word,None) is None:
+            continue
         df= (primIndex[query_word])[1]
         idf = math.log(no_doc/df,10)
         w_tq = idf * (1+math.log(queryIndex[query_word],10))
@@ -36,22 +40,22 @@ def ranking(primIndex,queryIndex):
 
     for word in primIndex:
         posting_list = primIndex[word][0]
-    
+
         for i in range(len(posting_list)):
             if posting_list[i][0] in normalize:
-                normalize[posting_list[i][0]]= normalize[posting_list[i][0]] + (1 + math.log(posting_list[i][1],10) )**2             
-    
-        
+                normalize[posting_list[i][0]]= normalize[posting_list[i][0]] + (1 + math.log(posting_list[i][1],10) )**2
+
+
 #from collections import OrderedDict
-    
+
     for doc_id in scores:
         scores[doc_id] = scores[doc_id]/(math.sqrt(q_norm)*math.sqrt(normalize[doc_id]))
-    
+
 
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
     sorted_scores.reverse()
     return sorted_scores
-    
+
 
 def readIndex(filename):
 	index_file = open(filename, "rb")
@@ -88,15 +92,13 @@ def input_and_process_query(queryIndex):
 
 
 primIndex = readIndex("index")
-id_title = readIndex("map")		
+id_title = readIndex("map")
 queryIndex = {}
 while True:
     input_and_process_query(queryIndex)
     #Call ranking methods here and display results.
     scores = ranking(primIndex,queryIndex)
     print_topK_docs(scores)
-	
+
     if input("\nInput E to exit and any other key to enter another query: ").lower()=='e':
-        break   
-   
-		
+        break
