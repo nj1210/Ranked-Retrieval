@@ -16,11 +16,12 @@ def ranking(primIndex,queryIndex):
     
     scores={}
     normalize={}
+    q_norm = 0
     for query_word in queryIndex:
         df= (primIndex[query_word])[1]
         idf = math.log(no_doc/df,10)
         w_tq = idf * (1+math.log(queryIndex[query_word],10))
-    
+        q_norm += w_tq*w_tq
         word_list =(primIndex[query_word])[0]
         for i in range(len(word_list)):
             w_td = 1+ math.log (word_list[i][1],10)
@@ -29,7 +30,6 @@ def ranking(primIndex,queryIndex):
                 scores[word_list[i][0]]= scores[word_list[i][0]] + score_d
             else:
                 scores[word_list[i][0]]= score_d
-
 
     for doc_id in scores:
         normalize[doc_id]=0
@@ -45,7 +45,7 @@ def ranking(primIndex,queryIndex):
 #from collections import OrderedDict
     
     for doc_id in scores:
-        scores[doc_id] = scores[doc_id]/(math.sqrt(normalize[doc_id]))
+        scores[doc_id] = scores[doc_id]/(math.sqrt(q_norm)*math.sqrt(normalize[doc_id]))
     
 
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
