@@ -10,10 +10,10 @@ def print_topK_docs(sorted_scores):
         print("No documents matching query found.")
         return
     print("List of relevant documents and their scores: ")
-    for i in range(min(50,len(sorted_scores))):
+    for i in range(min(30,len(sorted_scores))):
         print(f"id: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
-def ranking(primIndex,queryIndex):
+def ranking(index,queryIndex):
 
     no_doc=1614  #Total no of Docs
 
@@ -22,13 +22,13 @@ def ranking(primIndex,queryIndex):
     normalize={}
     q_norm = 0
     for query_word in queryIndex:
-        if primIndex.get(query_word,None) is None:
+        if index.get(query_word,None) is None:
             continue
-        df= (primIndex[query_word])[1]
+        df= (index[query_word])[1]
         idf = math.log(no_doc/df,10)
         w_tq = idf * (1+math.log(queryIndex[query_word],10))
         q_norm += w_tq*w_tq
-        word_list =(primIndex[query_word])[0]
+        word_list =(index[query_word])[0]
         for i in range(len(word_list)):
             w_td = 1+ math.log (word_list[i][1],10)
             score_d = w_td * w_tq
@@ -40,18 +40,17 @@ def ranking(primIndex,queryIndex):
     for doc_id in scores:
         normalize[doc_id]=0
 
-    for word in primIndex:
-        posting_list = primIndex[word][0]
+    for word in index:
+        posting_list = index[word][0]
 
         for i in range(len(posting_list)):
             if posting_list[i][0] in normalize:
-                normalize[posting_list[i][0]]= normalize[posting_list[i][0]] + (1 + math.log(posting_list[i][1],10) )**2
+                normalize[posting_list[i][0]] += (1 + math.log(posting_list[i][1],10) )**2
 
-
-#from collections import OrderedDict
+    q_norm = math.sqrt(q_norm)
 
     for doc_id in scores:
-        scores[doc_id] = scores[doc_id]/(math.sqrt(q_norm)*math.sqrt(normalize[doc_id]))
+        scores[doc_id] = scores[doc_id]/(q_norm*math.sqrt(normalize[doc_id]))
 
 
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
@@ -95,8 +94,9 @@ def input_and_process_query(queryIndex):
 
 primIndex = readIndex("index")
 id_title = readIndex("map")
-queryIndex = {}
+
 while True:
+    queryIndex = {}
     input_and_process_query(queryIndex)
     #Call ranking methods here and display results.
     start = time.time()

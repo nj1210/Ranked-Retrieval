@@ -12,14 +12,14 @@ index_file.close()
 print("Printing Content Index:")
 for key,val in primIndex.items():
 	print(key+":")
-	print("\tDF = "+str(val[1]))
+	print("\tIDF = "+str(val[1]))
 	print("\tPosting List: "+str(val[0]))
 
-print("\nPrinting Title Index:")
-for key,val in titleIndex.items():
-	print(key+":")
-	print("\tDF = "+str(val[1]))
-	print("\tPosting List: "+str(val[0]))
+#print("\nPrinting Title Index:")
+#for key,val in titleIndex.items():
+#	print(key+":")
+#	print("\tIDF = "+str(val[1]))
+#	print("\tPosting List: "+str(val[0]))
 
 print("\n\nSize of vocabulary of content = "+str(len(primIndex))+".")
 print("\nSize of vocabulary of title = "+str(len(titleIndex))+".")

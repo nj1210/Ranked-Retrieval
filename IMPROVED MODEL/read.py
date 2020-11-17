@@ -2,14 +2,38 @@ from bs4 import BeautifulSoup
 import codecs
 import pickle
 import time
+import math
+
+def normalize(index):
+    norm = {}
+    for word,tup in index.items():
+        posting_list = tup[0]
+        df = tup[1]
+        idf = math.log(no_docs/df,10)
+        for i in range(len(posting_list)):
+            doc_id = posting_list[i][0]
+            tf = posting_list[i][1]
+            norm[doc_id] = norm.get(doc_id,0) + (tf**2)
+        index[word] = (posting_list,idf)
+    
+    for doc_id in norm:
+    	norm[doc_id] = math.sqrt(norm[doc_id])
+    	
+    for word,tup in index.items():
+        posting_list = tup[0]
+        for i in range(len(posting_list)):
+            doc_id = posting_list[i][0]
+            wt = posting_list[i][1]
+            new_wt = wt/norm[doc_id]
+            posting_list[i] = (doc_id,new_wt)
 
 #Updates the primary index using the temporary index created for document.
 def update_primary_index(tempIndex,primIndex,doc_id):
 	for word,tf in tempIndex.items():
-		wordDict = primIndex.get(word,([],0))
-		post = wordDict[0]
-		post.append((doc_id,tf))
-		primIndex[word] = (post,wordDict[1]+1)
+		wordTuple = primIndex.get(word,([],0))
+		post = wordTuple[0]
+		post.append((doc_id, 1+math.log(tf)))
+		primIndex[word] = (post,wordTuple[1]+1)
 
 #Updates term frequency of a word in a document.
 def update_doc_index(word,tempIndex):
@@ -93,6 +117,10 @@ id_title = {}				#Map from doc ids to titles.
 parseFile("wiki_00",primIndex,titleIndex)	#Parsing the first file
 parseFile("wiki_01",primIndex,titleIndex)	#Parsing the second file
 parseFile("wiki_02",primIndex,titleIndex)	#Parsing the third file
+
+normalize(primIndex)
+normalize(titleIndex)
+
 end = time.time()
 
 #Dumping the dictionary into binary file 'index' in pickle format (Not readable)

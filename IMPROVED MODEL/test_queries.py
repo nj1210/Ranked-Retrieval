@@ -10,12 +10,12 @@ def print_topK_docs(sorted_scores):
         print("No documents matching query found.")
         return
     print("List of relevant documents and their scores: ")
-    for i in range(min(50,len(sorted_scores))):
+    for i in range(min(30,len(sorted_scores))):
         print(f"id: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
 def mergeScores(scoresContent,scoresTitle):
-    title_factor = 0.1
-    content_factor = 0.9
+    title_factor = 0.15
+    content_factor = 0.85
     scores = {}
 
     for key,conScore in scoresContent.items():
@@ -29,57 +29,41 @@ def mergeScores(scoresContent,scoresTitle):
     return sorted_scores
 
 
-def ranking(primIndex,queryIndex):
+def ranking(index,queryIndex):
 
-    no_doc=1614  #Total no of Docs
-
+    no_doc=len(id_title)  #Total no of Docs
+    
     scores={}
-    normalize={}
     q_norm = 0
     for query_word in queryIndex:
-        if primIndex.get(query_word,None) is None:
+        if index.get(query_word,None) is None:
             continue
-        df= (primIndex[query_word])[1]
-        idf = math.log(no_doc/df,10)
+        idf= (index[query_word])[1]
         w_tq = idf * (1+math.log(queryIndex[query_word],10))
         q_norm += w_tq*w_tq
-        word_list =(primIndex[query_word])[0]
+        word_list =(index[query_word])[0]
         for i in range(len(word_list)):
-            w_td = 1+ math.log (word_list[i][1],10)
+            w_td = word_list[i][1]
             score_d = w_td * w_tq
             if word_list[i][0] in scores:
                 scores[word_list[i][0]]= scores[word_list[i][0]] + score_d
             else:
                 scores[word_list[i][0]]= score_d
-
+    
+    q_norm = math.sqrt(q_norm)
+    #Query Normalization. Scores stored in index are already Document normalized. 
     for doc_id in scores:
-        normalize[doc_id]=0
-
-    for word in primIndex:
-        posting_list = primIndex[word][0]
-
-        for i in range(len(posting_list)):
-            if posting_list[i][0] in normalize:
-                normalize[posting_list[i][0]]= normalize[posting_list[i][0]] + (1 + math.log(posting_list[i][1],10) )**2
-
-
-#from collections import OrderedDict
-
-    for doc_id in scores:
-        scores[doc_id] = scores[doc_id]/(math.sqrt(q_norm)*math.sqrt(normalize[doc_id]))
+        scores[doc_id] = scores[doc_id]/q_norm
 
     return scores
-    #sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
-    #sorted_scores.reverse()
-    #return sorted_scores
 
 
 
 def readIndex(filename):
 	index_file = open(filename, "rb")
-	primIndex = pickle.load(index_file)
+	index = pickle.load(index_file)
 	index_file.close()
-	return primIndex
+	return index
 
 def update_query_index(word,queryIndex):
     global stopWords
@@ -106,6 +90,9 @@ def polish_word_and_update_index(word,queryIndex):
 
 def input_and_process_query(queryIndex):
 	query = input("\nPlease enter the query.[Keep words space separated for better results]:\n")
+	if len(query) < 1 :
+		print("Invalid query")
+		return
 	for word in query.strip().split(" "):
 		words = word.split("-")		#For '-' separated words.
 		if len(words)==1:
