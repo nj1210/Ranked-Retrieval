@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import codecs
 import pickle
+import time
 
 #Updates the primary index using the temporary index created for document.
 def update_primary_index(tempIndex,primIndex,doc_id):
@@ -12,11 +13,16 @@ def update_primary_index(tempIndex,primIndex,doc_id):
 
 #Updates term frequency of a word in a document.
 def update_doc_index(word,tempIndex):
-	tempIndex[word] = tempIndex.get(word,0) + 1
+	global stopWords
+	if len(word)==1 or word not in stopWords:
+		word = word.lower()
+		tempIndex[word] = tempIndex.get(word,0) + 1
+	else:
+		word = word.upper()
+		tempIndex[word] = tempIndex.get(word,0) + 1
 
 #Makes sure that words are purely made of alphabets before updating index.
 def polish_word_and_update_index(word,tempIndex):
-	word = word.lower()
 	if word.isalpha():
 		update_doc_index(word,tempIndex)
 		return
@@ -25,7 +31,7 @@ def polish_word_and_update_index(word,tempIndex):
 	for c in word:
 		if c.isalpha():
 			pol_word.append(c)
-	if len(pol_word)>1:
+	if len(pol_word)>0:
 		pol_word = ''.join(pol_word)
 		update_doc_index(pol_word,tempIndex)
 
@@ -67,7 +73,7 @@ def parseFile(filename,primIndex,titleIndex):
 	global no_docs
 	for t in tags:
     		doc_id = int(t["id"])
-    		print("Reading document id: "+str(doc_id))
+    		#print("Reading document id: "+str(doc_id))
     		doc_title = t["title"]
     		id_title[doc_id] = doc_title
     		doc_contents = t.get_text()
@@ -75,13 +81,19 @@ def parseFile(filename,primIndex,titleIndex):
     		readDocTitle(doc_id,doc_title,titleIndex)
     		no_docs+=1
 
+print("Starting the indexing process.")
+start = time.time()
 no_docs = 0
+
+stopWords = ['ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she', 'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does', 'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was', 'here', 'than']
+
 primIndex = {}				#The data structure for the content index.
 titleIndex = {}			#The data structure for the title index.
 id_title = {}				#Map from doc ids to titles.
 parseFile("wiki_00",primIndex,titleIndex)	#Parsing the first file
 parseFile("wiki_01",primIndex,titleIndex)	#Parsing the second file
 parseFile("wiki_02",primIndex,titleIndex)	#Parsing the third file
+end = time.time()
 
 #Dumping the dictionary into binary file 'index' in pickle format (Not readable)
 index_file = open('index', 'wb')
@@ -96,5 +108,9 @@ title_file = open('titleIndex','wb')
 pickle.dump(titleIndex, title_file)
 title_file.close()
 
-print("\nNumber of documents read = "+str(no_docs))
-print("Index created and saved in 'index' file.")
+print("\nIndex created and saved in 'index' file.")
+print("\nNumber of documents parsed = "+str(no_docs))
+print("Size of content vocabulary = "+str(len(primIndex)))
+print("Size of title vocabulary = "+str(len(titleIndex)))
+print("Time taken for parsing and indexing = "+str(end-start)+" seconds.")
+

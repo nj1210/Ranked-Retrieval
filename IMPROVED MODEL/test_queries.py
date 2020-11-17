@@ -2,12 +2,14 @@ import pickle
 import numpy as np
 import math
 import operator
-
+import time
 
 def print_topK_docs(sorted_scores):
     print()
     if len(sorted_scores)==0:
         print("No documents matching query found.")
+        return
+    print("List of relevant documents and their scores: ")
     for i in range(min(50,len(sorted_scores))):
         print(f"id: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
@@ -80,7 +82,13 @@ def readIndex(filename):
 	return primIndex
 
 def update_query_index(word,queryIndex):
-	queryIndex[word] = queryIndex.get(word,0) + 1
+    global stopWords
+    if len(word)==1 or word not in stopWords:
+        word = word.lower()
+        queryIndex[word] = queryIndex.get(word,0) + 1
+    else:
+        word = word.upper()
+        queryIndex[word] = queryIndex.get(word,0) + 1
 
 def polish_word_and_update_index(word,queryIndex):
 	word = word.lower()
@@ -92,12 +100,12 @@ def polish_word_and_update_index(word,queryIndex):
 	for c in word:
 		if c.isalpha():
 			pol_word.append(c)
-	if len(pol_word)>1:
+	if len(pol_word)>0:
 		pol_word = ''.join(pol_word)
 		update_query_index(pol_word,queryIndex)
 
 def input_and_process_query(queryIndex):
-	query = input("\n\nPlease enter the query.[Keep words space separated for better results]:\n")
+	query = input("\nPlease enter the query.[Keep words space separated for better results]:\n")
 	for word in query.strip().split(" "):
 		words = word.split("-")		#For '-' separated words.
 		if len(words)==1:
@@ -106,7 +114,7 @@ def input_and_process_query(queryIndex):
 		for w in words:
 			polish_word_and_update_index(w,queryIndex)
 
-
+stopWords = ['ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she', 'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does', 'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was', 'here', 'than']
 primIndex = readIndex("index")
 id_title = readIndex("map")
 titleIndex = readIndex("titleIndex")
@@ -114,9 +122,12 @@ queryIndex = {}
 while True:
     input_and_process_query(queryIndex)
     #Call ranking methods here and display results.
+    start = time.time()
     scoresContent = ranking(primIndex,queryIndex)
     scoresTitle = ranking(titleIndex,queryIndex)
     scores = mergeScores(scoresContent,scoresTitle)
+    end = time.time()
+    print("\nResults obtained in "+str(end-start)+" seconds.")
     print_topK_docs(scores)
 
     if input("\nInput E to exit and any other key to enter another query: ").lower()=='e':
