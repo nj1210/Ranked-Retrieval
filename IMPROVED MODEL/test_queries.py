@@ -4,80 +4,73 @@ import math
 import operator
 import time
 
+#Printing the list of top 30 documents in decreasing order
 def print_topK_docs(sorted_scores):
     print()
     if len(sorted_scores)==0:
-        print("No documents matching query found.")
+        print("\nNo documents matching query found.")
         return
-    print("List of relevant documents and their scores: ")
+    print("\nList of the most relevant documents and their scores: ")
     for i in range(min(30,len(sorted_scores))):
-        print(f"id: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
+        print(f"{i:2}. \tid: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
-def mergeScores(scoresContent,scoresTitle):
-    title_factor = 0.15
-    content_factor = 0.85
+#Calculates final score for each document with respect to current query.
+def mergeScores(content_scores,title_scores):
+    title_factor = 0.20
+    content_factor = 0.80
     scores = {}
 
-    for key,conScore in scoresContent.items():
-        titleScore = scoresTitle.get(key,None)
+    for key,con_score in content_scores.items():
+        titleScore = title_scores.get(key,None)
         if titleScore is None:
-            scores[key] = content_factor * conScore
+            scores[key] = content_factor * con_score
         else:
-            scores[key] = (content_factor * conScore) + (title_factor * titleScore)
+            scores[key] = (content_factor * con_score) + (title_factor * titleScore)
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
     sorted_scores.reverse()
     return sorted_scores
 
-
-def ranking(index,queryIndex):
-
+#Calculate score of each document with respect to current query.
+def calculate_score(index,query_index):
     no_doc=len(id_title)  #Total no of Docs
-    
+
     scores={}
     q_norm = 0
-    for query_word in queryIndex:
+    for query_word in query_index:
         if index.get(query_word,None) is None:
             continue
         idf= (index[query_word])[1]
-        w_tq = idf * (1+math.log(queryIndex[query_word],10))
+        w_tq = idf * (1+math.log(query_index[query_word],10))
         q_norm += w_tq*w_tq
         word_list =(index[query_word])[0]
         for i in range(len(word_list)):
             w_td = word_list[i][1]
             score_d = w_td * w_tq
-            if word_list[i][0] in scores:
-                scores[word_list[i][0]]= scores[word_list[i][0]] + score_d
-            else:
-                scores[word_list[i][0]]= score_d
-    
+            scores[word_list[i][0]]= scores.get(word_list[i][0],0) + score_d
+
     q_norm = math.sqrt(q_norm)
-    #Query Normalization. Scores stored in index are already Document normalized. 
+    #Query Normalization. Scores stored in index are already Document normalized.
     for doc_id in scores:
         scores[doc_id] = scores[doc_id]/q_norm
 
     return scores
 
-
-
+#Read index/map from pickle file.
 def readIndex(filename):
 	index_file = open(filename, "rb")
 	index = pickle.load(index_file)
 	index_file.close()
 	return index
 
-def update_query_index(word,queryIndex):
-    global stopWords
-    if len(word)==1 or word not in stopWords:
-        word = word.lower()
-        queryIndex[word] = queryIndex.get(word,0) + 1
-    else:
-        word = word.upper()
-        queryIndex[word] = queryIndex.get(word,0) + 1
+#Updates term frequency of a word in the query index.
+def update_query_index(word,query_index):
+    word = word.lower()
+    query_index[word] = query_index.get(word,0) + 1
 
-def polish_word_and_update_index(word,queryIndex):
-	word = word.lower()
+#Makes sure that words are purely made of alphabets before updating index.
+def polish_word_and_update_index(word,query_index):
 	if word.isalpha():
-		update_query_index(word,queryIndex)
+		update_query_index(word,query_index)
 		return
 	#If word has non-alphabet characters, remove them.
 	pol_word = []
@@ -86,9 +79,9 @@ def polish_word_and_update_index(word,queryIndex):
 			pol_word.append(c)
 	if len(pol_word)>0:
 		pol_word = ''.join(pol_word)
-		update_query_index(pol_word,queryIndex)
+		update_query_index(pol_word,query_index)
 
-def input_and_process_query(queryIndex):
+def input_and_process_query(query_index):
 	query = input("\nPlease enter the query.[Keep words space separated for better results]:\n")
 	if len(query) < 1 :
 		print("Invalid query")
@@ -96,23 +89,24 @@ def input_and_process_query(queryIndex):
 	for word in query.strip().split(" "):
 		words = word.split("-")		#For '-' separated words.
 		if len(words)==1:
-			polish_word_and_update_index(word,queryIndex)
+			polish_word_and_update_index(word,query_index)
 			continue
 		for w in words:
-			polish_word_and_update_index(w,queryIndex)
+			polish_word_and_update_index(w,query_index)
 
-stopWords = ['ourselves', 'hers', 'between', 'yourself', 'but', 'again', 'there', 'about', 'once', 'during', 'out', 'very', 'having', 'with', 'they', 'own', 'an', 'be', 'some', 'for', 'do', 'its', 'yours', 'such', 'into', 'of', 'most', 'itself', 'other', 'off', 'is', 's', 'am', 'or', 'who', 'as', 'from', 'him', 'each', 'the', 'themselves', 'until', 'below', 'are', 'we', 'these', 'your', 'his', 'through', 'don', 'nor', 'me', 'were', 'her', 'more', 'himself', 'this', 'down', 'should', 'our', 'their', 'while', 'above', 'both', 'up', 'to', 'ours', 'had', 'she', 'all', 'no', 'when', 'at', 'any', 'before', 'them', 'same', 'and', 'been', 'have', 'in', 'will', 'on', 'does', 'yourselves', 'then', 'that', 'because', 'what', 'over', 'why', 'so', 'can', 'did', 'not', 'now', 'under', 'he', 'you', 'herself', 'has', 'just', 'where', 'too', 'only', 'myself', 'which', 'those', 'i', 'after', 'few', 'whom', 't', 'being', 'if', 'theirs', 'my', 'against', 'a', 'by', 'doing', 'it', 'how', 'further', 'was', 'here', 'than']
-primIndex = readIndex("index")
+#Reading the content index, title index and id-title map.
+content_index = readIndex("index")
 id_title = readIndex("map")
-titleIndex = readIndex("titleIndex")
-queryIndex = {}
+title_index = readIndex("titleIndex")
+
 while True:
-    input_and_process_query(queryIndex)
-    #Call ranking methods here and display results.
+    query_index = {}
+    input_and_process_query(query_index)
+    #Call scoring methods and display results.
     start = time.time()
-    scoresContent = ranking(primIndex,queryIndex)
-    scoresTitle = ranking(titleIndex,queryIndex)
-    scores = mergeScores(scoresContent,scoresTitle)
+    content_scores = calculate_score(content_index,query_index)
+    title_scores = calculate_score(title_index,query_index)
+    scores = mergeScores(content_scores,title_scores)
     end = time.time()
     print("\nResults obtained in "+str(end-start)+" seconds.")
     print_topK_docs(scores)

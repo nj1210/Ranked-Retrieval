@@ -4,6 +4,7 @@ import math
 import operator
 import time
 
+#Printing the list of top 30 documents in decreasing order
 def print_topK_docs(sorted_scores):
     print()
     if len(sorted_scores)==0:
@@ -13,13 +14,24 @@ def print_topK_docs(sorted_scores):
     for i in range(min(30,len(sorted_scores))):
         print(f"id: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
-def ranking(index,queryIndex):
+#Calculating the normalization factor for each document.
+def calculate_doc_norm_factor(index):
+    norm={}
 
-    no_doc=1614  #Total no of Docs
+    for word in index:
+        posting_list = index[word][0]
+        for i in range(len(posting_list)):
+            norm[posting_list[i][0]] = norm.get(posting_list[i][0],0) + (1 + math.log(posting_list[i][1],10) )**2
 
+    for id,val in norm.items():
+        norm[id] = math.sqrt(val)
+    return norm
+
+#Calculate score of each document with respect to current query.
+def calculate_score(index,queryIndex,doc_norm):
+    no_doc=len(id_title)  #Total no of Docs
 
     scores={}
-    normalize={}
     q_norm = 0
     for query_word in queryIndex:
         if index.get(query_word,None) is None:
@@ -32,41 +44,30 @@ def ranking(index,queryIndex):
         for i in range(len(word_list)):
             w_td = 1+ math.log (word_list[i][1],10)
             score_d = w_td * w_tq
-            if word_list[i][0] in scores:
-                scores[word_list[i][0]]= scores[word_list[i][0]] + score_d
-            else:
-                scores[word_list[i][0]]= score_d
-
-    for doc_id in scores:
-        normalize[doc_id]=0
-
-    for word in index:
-        posting_list = index[word][0]
-
-        for i in range(len(posting_list)):
-            if posting_list[i][0] in normalize:
-                normalize[posting_list[i][0]] += (1 + math.log(posting_list[i][1],10) )**2
+            scores[word_list[i][0]]= scores.get(word_list[i][0],0) + score_d
 
     q_norm = math.sqrt(q_norm)
 
+    #Query and Document Normalization
     for doc_id in scores:
-        scores[doc_id] = scores[doc_id]/(q_norm*math.sqrt(normalize[doc_id]))
-
+        scores[doc_id] = scores[doc_id]/(q_norm*doc_norm[doc_id])
 
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1))
     sorted_scores.reverse()
     return sorted_scores
 
-
+#Read index/map from pickle file.
 def readIndex(filename):
 	index_file = open(filename, "rb")
 	primIndex = pickle.load(index_file)
 	index_file.close()
 	return primIndex
 
+#Updates term frequency of a word in the query index.
 def update_query_index(word,queryIndex):
 	queryIndex[word] = queryIndex.get(word,0) + 1
 
+#Makes sure that words are purely made of alphabets before updating index.
 def polish_word_and_update_index(word,queryIndex):
 	word = word.lower()
 	if word.isalpha():
@@ -94,13 +95,14 @@ def input_and_process_query(queryIndex):
 
 primIndex = readIndex("index")
 id_title = readIndex("map")
+norm = calculate_doc_norm_factor(primIndex)
 
 while True:
     queryIndex = {}
     input_and_process_query(queryIndex)
     #Call ranking methods here and display results.
     start = time.time()
-    scores = ranking(primIndex,queryIndex)
+    scores = calculate_score(primIndex,queryIndex,norm)
     end = time.time()
     print("\nResults obtained in "+str(end-start)+" seconds.")
     print_topK_docs(scores)

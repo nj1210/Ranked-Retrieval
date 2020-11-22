@@ -5,10 +5,10 @@ index_file = open("index", "rb")
 primIndex = pickle.load(index_file)
 index_file.close()
 
-#Printing it.
+#Printing the content index.
 for key,val in primIndex.items():
 	print(key+":")
 	print("\tDF = "+str(val[1]))
 	print("\tPosting List: "+str(val[0]))
-	
+
 print("\n\nSize of vocabulary = "+str(len(primIndex))+".")

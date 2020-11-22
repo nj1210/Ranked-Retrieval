@@ -3,23 +3,23 @@ import codecs
 import pickle
 import time
 
-#Updates the primary index using the temporary index created for document.
-def update_primary_index(tempIndex,primIndex,doc_id):
-	for word,tf in tempIndex.items():
-		wordDict = primIndex.get(word,([],0))
+#Updates the content index using the temporary index created for document.
+def update_content_index(temp_index,content_index,doc_id):
+	for word,tf in temp_index.items():
+		wordDict = content_index.get(word,([],0))
 		post = wordDict[0]
 		post.append((doc_id,tf))
-		primIndex[word] = (post,wordDict[1]+1)
-		
+		content_index[word] = (post,wordDict[1]+1)
+
 #Updates term frequency of a word in a document.
-def update_doc_index(word,tempIndex):
-	tempIndex[word] = tempIndex.get(word,0) + 1
-	
+def update_doc_index(word,temp_index):
+	temp_index[word] = temp_index.get(word,0) + 1
+
 #Makes sure that words are purely made of alphabets before updating index.
-def polish_word_and_update_index(word,tempIndex):
+def polish_word_and_update_index(word,temp_index):
 	word = word.lower()
 	if word.isalpha():
-		update_doc_index(word,tempIndex)
+		update_doc_index(word,temp_index)
 		return
 	#If word has non-alphabet characters, remove them.
 	pol_word = []
@@ -28,62 +28,71 @@ def polish_word_and_update_index(word,tempIndex):
 			pol_word.append(c)
 	if len(pol_word)>1:
 		pol_word = ''.join(pol_word)
-		update_doc_index(pol_word,tempIndex)
-		
+		update_doc_index(pol_word,temp_index)
+
 #Reads a document and updates the index.
-def readDoc(doc_id,doc_contents,primIndex):
-	tempIndex = {}
+def index_doc(doc_id,doc_contents,content_index):
+	temp_index = {}
 	for line in doc_contents.splitlines():
 		for word in line.strip().split(" "):
 			words = word.split("-")		#For '-' separated words.
 			if len(words)==1:
-				polish_word_and_update_index(word,tempIndex)
+				polish_word_and_update_index(word,temp_index)
 				continue
 			for w in words:
-				polish_word_and_update_index(w,tempIndex)
-				
-	#Update the primary index using the temporary index created for document.
-	update_primary_index(tempIndex,primIndex,doc_id)		
+				polish_word_and_update_index(w,temp_index)
 
-#Reads a file and updates the index    
-def parseFile(filename,primIndex):
+	#Update the content index using the temporary index created for document.
+	update_content_index(temp_index,content_index,doc_id)
+
+
+#Reads a file and updates the index
+def parse_file(filename,content_index):
 	global id_title
+	#Reading all data from file "filename".
 	with codecs.open(filename, encoding='utf-8') as f:
 		data = f.read()
+
+	#Initializing the BeautifulSoup object to the data read from the file.
 	soup = BeautifulSoup(data,'html.parser')
-	tags = soup.find_all('doc')	#Separates data among different doc tags.
-	global no_docs 
-	for t in tags:
-    		doc_id = int(t["id"])
-    		#print("Reading document id: "+str(doc_id))
-    		doc_title = t["title"]
-    		id_title[doc_id] = doc_title
-    		doc_contents = t.get_text()
-    		readDoc(doc_id,doc_contents,primIndex)
-    		no_docs+=1
+	#Separates data among different doc tags.
+	tags = soup.find_all('doc')
 
+	for t in tags:						#For each document identified
+		doc_id = int(t["id"])			#Document id
+		doc_title = t["title"]			#Document title
+		id_title[doc_id] = doc_title	#Mapping the document id and title
+		doc_contents = t.get_text()		#Document contents
+		#Indexing the contents of the document.
+		index_doc(doc_id,doc_contents,content_index)
+
+
+#Beginning of program.
 print("Starting the indexing process.")
-start = time.time()	
-no_docs = 0
-primIndex = {}				#The data structure for the index.  	
-id_title = {}				#Map from doc ids to titles.	
-parseFile("wiki_00",primIndex)	#Parsing the first file
-parseFile("wiki_01",primIndex)	#Parsing the second file
-parseFile("wiki_02",primIndex)	#Parsing the third file
-end = time.time()
+start = time.time()				#Noting start time for indexing.
 
-#Dumping the dictionary into binary file 'index' in pickle format (Not readable)
+content_index = {}					#The data structure for the index.
+id_title = {}					#Map from doc ids to titles.
+
+parse_file("wiki_00",content_index)	#Parsing the first file
+parse_file("wiki_01",content_index)	#Parsing the second file
+parse_file("wiki_02",content_index)	#Parsing the third file
+
+no_docs = len(id_title)
+end = time.time()				#Noting end time for indexing.
+
+#Dumping the inverted index into binary file 'index' in pickle format (Not readable)
 index_file = open('index', 'wb')
-pickle.dump(primIndex, index_file) 
+pickle.dump(content_index, index_file)
 index_file.close()
 
+#Dumping the id-name map into binary file 'map' in pickle format (Not readable)
 id_file = open('map','wb')
-pickle.dump(id_title, id_file) 
+pickle.dump(id_title, id_file)
 id_file.close()
 
-print("\nIndex created and saved in 'index' file.")
+#Printing Indexing Statistics
+print("\nIndex created and saved.")
 print("\nNumber of documents parsed = "+str(no_docs))
-print("Size of vocabulary = "+str(len(primIndex)))
+print("Size of vocabulary = "+str(len(content_index)))
 print("Time taken for parsing and indexing = "+str(end-start)+" seconds.")
-
-
