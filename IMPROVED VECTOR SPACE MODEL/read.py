@@ -6,7 +6,7 @@ import math
 import operator
 import os.path
 
-#Normalizes the index
+#Normalizes the index scores.
 def normalize(index):
     norm = {}
     for word,tup in index.items():
@@ -37,21 +37,21 @@ def normalize(index):
         #Sorting the documents in reverse order of their tf scores.
         posting_list.sort(key=operator.itemgetter(1),reverse=True)
         #Getting the champion list for the term by getting top 150 documents for current term.
-        index[word] = (posting_list[0:150],tup[1])
+        index[word] = (posting_list[0:100],tup[1])
 
-#Updates the content index using the temporary index created for document.
-def update_index(temp_index,content_index,doc_id):
+#Updates the main index using the temporary index created for document.
+def update_index(temp_index,main_index,doc_id):
 	for word,tf in temp_index.items():
-		wordTuple = content_index.get(word,([],0))
+		wordTuple = main_index.get(word,([],0))
 		post = wordTuple[0]
 		post.append((doc_id, 1+math.log(tf)))
-		content_index[word] = (post,wordTuple[1]+1)
+		main_index[word] = (post,wordTuple[1]+1)
 
 #Updates term frequency of a word in a document.
 def update_temp_index(word,temp_index):
 	temp_index[word] = temp_index.get(word,0) + 1
 
-#Makes sure that words are purely made of alphabets before updating index.
+#Makes sure that words are purely made of lower case alphabets before updating index.
 def polish_word_and_update_index(word,temp_index):
     word = word.lower()        #Converting word to lower case.
     #If word only has alphabet characters, update index.
@@ -99,7 +99,7 @@ def index_title(doc_id,doc_title,title_index):
 #Reads a file and updates the index
 def parse_file(filename,content_index,title_index):
     global id_title
-    #Reading all data from file "filename".
+    #Reading all data from file "filename" from parent directory.
     with codecs.open(os.path.join(os.path.dirname(__file__),os.pardir,filename), encoding='utf-8') as f:
         data = f.read()
     #Initializing the BeautifulSoup object to the data read from the file.
@@ -118,7 +118,7 @@ def parse_file(filename,content_index,title_index):
 
 
 #Beginning of program.
-print("Starting the indexing process.")
+print("\nStarting the indexing process.")
 start = time.time()         #Noting start time for indexing.
 
 content_index = {}			#The data structure for the content index.

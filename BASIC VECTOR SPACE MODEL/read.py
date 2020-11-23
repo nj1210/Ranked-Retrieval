@@ -16,7 +16,7 @@ def update_content_index(temp_index,content_index,doc_id):
 def update_doc_index(word,temp_index):
 	temp_index[word] = temp_index.get(word,0) + 1
 
-#Makes sure that words are purely made of alphabets before updating index.
+#Makes sure that words are purely made of lower case alphabets before updating index.
 def polish_word_and_update_index(word,temp_index):
 	word = word.lower()
 	if word.isalpha():
@@ -50,7 +50,7 @@ def index_doc(doc_id,doc_contents,content_index):
 #Reads a file and updates the index
 def parse_file(filename,content_index):
 	global id_title
-	#Reading all data from file "filename".
+	#Reading all data from file "filename" stored in parent directory.
 	with codecs.open(os.path.join(os.path.dirname(__file__),os.pardir,filename), encoding='utf-8') as f:
 		data = f.read()
 
@@ -69,10 +69,10 @@ def parse_file(filename,content_index):
 
 
 #Beginning of program.
-print("Starting the indexing process.")
+print("\nStarting the indexing process.")
 start = time.time()				#Noting start time for indexing.
 
-content_index = {}					#The data structure for the index.
+content_index = {}				#The data structure for the index.
 id_title = {}					#Map from doc ids to titles.
 
 parse_file("wiki_00",content_index)	#Parsing the first file

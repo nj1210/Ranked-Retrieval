@@ -11,7 +11,7 @@ def print_topK_docs(sorted_scores):
         print("No documents matching query found.")
         return
     print("List of relevant documents and their scores: ")
-    for i in range(min(30,len(sorted_scores))):
+    for i in range(min(10,len(sorted_scores))):
         print(f"{i:2}. \tid: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
 #Calculate score of each document with respect to current query.
@@ -56,6 +56,7 @@ def polish_word_and_update_index(word,query_index):
 		pol_word = ''.join(pol_word)
 		update_query_index(pol_word,query_index)
 
+#Inputs a query and processes it to populate the query index
 def input_and_process_query(query_index):
 	query = input("\nPlease enter the query.[Keep words space separated for better results]:\n")
 	for word in query.strip().split(" "):
@@ -66,19 +67,21 @@ def input_and_process_query(query_index):
 		for w in words:
 			polish_word_and_update_index(w,query_index)
 
-
+#Beginning of program
 inv_index = read_index("index")
 id_title = read_index("map")
-k3 = 1.4
+k3 = 1.4    #Parameter
 
 while True:
     query_index = {}
     input_and_process_query(query_index)
+    #Ranking documents and display results.
     start = time.time()
     scores = calculate_score(inv_index,query_index,k3)
     end = time.time()
     print("\nResults obtained in "+str(end-start)+" seconds.")
     print_topK_docs(scores)
 
+    #To break out from the loop/continue.
     if input("\nInput E to exit and any other key to enter another query: ").lower()=='e':
         break

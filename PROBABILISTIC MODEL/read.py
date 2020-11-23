@@ -35,7 +35,7 @@ def calculate_score(content_index,title_index,content_factor,title_factor,Lav_co
 		#Sorting the documents in reverse order of their tf scores.
 		posting_list.sort(key=operator.itemgetter(1),reverse=True)
 		#Getting the champion list for the term by getting top 150 documents for current term.
-		final_index[word] = posting_list[0:150]
+		final_index[word] = posting_list[0:100]
 
 	return final_index
 

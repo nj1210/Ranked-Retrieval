@@ -11,8 +11,8 @@ def print_topK_docs(sorted_scores):
         print("\nNo documents matching query found.")
         return
     print("\nList of the most relevant documents and their scores: ")
-    for i in range(min(30,len(sorted_scores))):
-        print(f"{i:2}. \tid: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
+    for i in range(min(10,len(sorted_scores))):
+        print(f"{i+1:2}. \tid: {sorted_scores[i][0]:4} \ttitle: {id_title[sorted_scores[i][0]]:60} score:{sorted_scores[i][1]}")
 
 #Calculates final score for each document with respect to current query.
 def mergeScores(content_scores,title_scores):
@@ -81,6 +81,7 @@ def polish_word_and_update_index(word,query_index):
 		pol_word = ''.join(pol_word)
 		update_query_index(pol_word,query_index)
 
+#Inputs a query and processes it to populate the query index.
 def input_and_process_query(query_index):
 	query = input("\nPlease enter the query.[Keep words space separated for better results]:\n")
 	if len(query) < 1 :
@@ -102,7 +103,7 @@ title_index = readIndex("titleIndex")
 while True:
     query_index = {}
     input_and_process_query(query_index)
-    #Call scoring methods and display results.
+    #Ranking documents and display results.
     start = time.time()
     content_scores = calculate_score(content_index,query_index)
     title_scores = calculate_score(title_index,query_index)
@@ -111,5 +112,6 @@ while True:
     print("\nResults obtained in "+str(end-start)+" seconds.")
     print_topK_docs(scores)
 
+    #To break out from the loop/continue.
     if input("\nInput E to exit and any other key to enter another query: ").lower()=='e':
         break
